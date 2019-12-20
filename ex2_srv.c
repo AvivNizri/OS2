@@ -69,6 +69,8 @@ void SIGUSR1_handler(int sig){
         sprintf(res,"%1d",calc);
         write(toClientFile, res, strlen(res));
         close(toClientFile);
+
+        // return signal to the relevant client
         kill(prob[0],SIGUSR1);
     }
 }
