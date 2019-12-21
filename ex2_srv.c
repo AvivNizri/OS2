@@ -9,10 +9,11 @@
 
 #define ioFile "to_srv"
 #define resFile "to_client_"
+#define SIZE 1024
 
 void SIGUSR1_handler(int sig){
     // when signal arrived main server, main process will fork here
-    printf("Hey client %d\n", sig);
+    printf("Server handle client %d\n", sig);
     
     //signal(SIGUSR1,SIGUSR1_handler);
 
@@ -21,28 +22,33 @@ void SIGUSR1_handler(int sig){
         // prob[0] = remote process ID | prob[1] = left number
         // prob[2] = math action       | prob[3] = right number
         int prob[4];
-        char buf[1024];
+        char buf[SIZE];
 
         int fromClient = open(ioFile, O_RDONLY);
         if(fromClient <= 0){
             printf("Client file Opening failure\n");
-            exit(0);
+            exit(EXIT_FAILURE);
         }
         printf("client File open\n");
         // read entire file
-        if(read(fromClient, &buf, strlen(buf)) > 0){
-            printf("Got from client : %s\n", buf);
+        int val;
+        if(val = read(fromClient, buf, SIZE) <= 0){
+            close(fromClient);
+            printf("Error reading client file\n");
+            exit(EXIT_FAILURE);
         }
+        //sleep(1);
         close(fromClient);
-
         remove(ioFile);
+
+        printf("Got from client : %s\n", buf);
 
         // parse the data from the file
         char* tokptr = strtok(buf," ");
         for(int i=0 ;i<4; i++){
             prob[i] = atoi(tokptr);
             tokptr = strtok(NULL," ");
-            //printf("Number %d\n", prob[i]);
+            printf("Number %d\n", prob[i]);
         }
 
         // lets start the calculations
@@ -71,7 +77,7 @@ void SIGUSR1_handler(int sig){
         strcat(resultFileName, id);
 
         int toClientFile = open(resultFileName, O_WRONLY |O_CREAT|O_TRUNC, S_IRWXU);
-        if(toClientFile < 0) exit(0);
+        if(toClientFile < 0) exit(EXIT_FAILURE);
         char res[128];
         sprintf(res,"%1d",calc);
         write(toClientFile, res, strlen(res));
@@ -85,9 +91,10 @@ void SIGUSR1_handler(int sig){
 int main(int argc, char* argv[]){
     // delete to_srv if exists
     remove(ioFile);
-    signal(SIGUSR1,SIGUSR1_handler);
+    
     printf("Server pid : %d\n",getpid());
     while(1){
+        signal(SIGUSR1,SIGUSR1_handler);
         // now we will wait until signal arrive
     	pause();
     }

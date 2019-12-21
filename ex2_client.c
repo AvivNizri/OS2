@@ -10,9 +10,10 @@
 
 #define ioFile "to_srv"
 #define resFile "to_client_"
+#define SIZE 1024
 
 void SIGUSR1_handler(int sig) {
-    char buf[512];
+    char buf[SIZE];
 
     signal(SIGUSR1,SIGUSR1_handler);
 
@@ -20,20 +21,23 @@ void SIGUSR1_handler(int sig) {
     sleep(1);
 
     // build dest file name
-    char id[128];
+    char id[SIZE];
     sprintf(id,"%d",getpid());
     char* resultFileName = malloc(strlen(resFile) + strlen(id) + 1);
     strcpy(resultFileName, resFile);
     strcat(resultFileName, id);
 
-    int toClientFile = open(resultFileName, O_WRONLY |O_CREAT|O_TRUNC, S_IRWXU);
+    int toClientFile = open(resultFileName, O_RDONLY);
 
-    if(toClientFile < 0) exit(0);
-
-    if(read(toClientFile, buf, strlen(buf)) > 0){
-        printf("Recived calculation from server : %s\n", buf);
+    if(toClientFile < 0) exit(EXIT_FAILURE);
+    int ret;
+    if(ret = read(toClientFile, buf, SIZE) <= 0){
+        close(toClientFile);
+        printf("Error reading file from server\n");
+        exit(EXIT_FAILURE);
     }
     close(toClientFile);
+    printf("Recived calculation from server : %s\n", buf);
     
 }
 
@@ -60,7 +64,7 @@ int main(int argc, char* argv[]){
 
     if(itr == 10){
         printf("Warning: Can't create to_srv file, already exist\nExiting...\n");
-        exit(0);
+        exit(EXIT_FAILURE);
 	}
     // that will handle signal from the server
     signal(SIGUSR1,SIGUSR1_handler); 
@@ -69,9 +73,9 @@ int main(int argc, char* argv[]){
     int toClientFile = open(ioFile, O_WRONLY |O_CREAT|O_TRUNC, S_IRWXU);
     if(toClientFile < 0){
         printf("Failed opening file\n");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
-    char data[1024];
+    char data[SIZE];
     sprintf(data,"%d %d %d %d", getpid(), atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
     strcat(data, "\0");
     printf("Data client sent is : %s\n", data);
