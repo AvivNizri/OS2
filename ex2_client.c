@@ -38,7 +38,7 @@ void SIGUSR1_handler(int sig) {
     }
     close(toClientFile);
     printf("Recived calculation from server : %s\n", buf);
-    
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char* argv[]){
