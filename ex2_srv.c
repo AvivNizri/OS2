@@ -12,19 +12,26 @@
 
 void SIGUSR1_handler(int sig){
     // when signal arrived main server, main process will fork here
-    //printf("hey\n");
-    pid_t cpid = fork();
-    if(cpid == 0){
+    printf("Hey client %d\n", sig);
+    
+    //signal(SIGUSR1,SIGUSR1_handler);
+
+    //pid_t cpid = fork();
+    //if(cpid == 0){
         // prob[0] = remote process ID | prob[1] = left number
         // prob[2] = math action       | prob[3] = right number
         int prob[4];
-        char buf[256];
+        char buf[1024];
 
         int fromClient = open(ioFile, O_RDONLY);
-        if(fromClient <= 0) exit(0);
-        // read word by word
-        if(read(fromClient, buf, 256) > 0){
-            //printf("%s\n", buf);
+        if(fromClient <= 0){
+            printf("Client file Opening failure\n");
+            exit(0);
+        }
+        printf("client File open\n");
+        // read entire file
+        if(read(fromClient, &buf, strlen(buf)) > 0){
+            printf("Got from client : %s\n", buf);
         }
         close(fromClient);
 
@@ -54,7 +61,7 @@ void SIGUSR1_handler(int sig){
             calc = prob[1]/prob[3];
             break; 
         }
-        //printf("answer is %d\n", calc);
+        printf("Answer to client is %d\n", calc);
         
         // build dest file name
         char id[128];
@@ -72,16 +79,16 @@ void SIGUSR1_handler(int sig){
 
         // return signal to the relevant client
         kill(prob[0],SIGUSR1);
-    }
+    //}
 }
 
 int main(int argc, char* argv[]){
     // delete to_srv if exists
     remove(ioFile);
-    signal(SIGUSR1,SIGUSR1_handler); /* handles signal from other process */
-    printf("server pid is= %d\n",getpid());
+    signal(SIGUSR1,SIGUSR1_handler);
+    printf("Server pid : %d\n",getpid());
     while(1){
         // now we will wait until signal arrive
-    	pause(); /* waiting for other to signal */
+    	pause();
     }
 }
